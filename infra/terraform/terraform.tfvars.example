@@ -1,0 +1,28 @@
+# Copy to terraform.tfvars (git-ignored) and fill in your values.
+
+project    = "ata"
+env        = "dev"
+aws_region = "us-east-1"
+
+# Entra ID
+entra_tenant_id     = "00000000-0000-0000-0000-000000000000" # tenant (directory) id
+graph_client_id     = "00000000-0000-0000-0000-000000000000" # bot app registration (Graph calling)
+admin_spa_client_id = "00000000-0000-0000-0000-000000000000" # admin panel SPA registration
+admin_api_audience  = "api://00000000-0000-0000-0000-000000000000"
+admin_api_scope     = "api://00000000-0000-0000-0000-000000000000/access_as_user"
+admin_group_id      = "" # optional: Entra group allowed to administer
+
+# Alerts
+alert_email         = "oncall-alerts@example.com"
+
+# Convocation policy
+max_attempts           = 5
+ring_timeout_seconds   = 45
+max_escalations        = 1
+unanswered_ttl_minutes = 60
+
+# Observability
+log_retention_days = 90
+
+# CORS (the CloudFront URL is always added)
+extra_cors_origins = ["http://localhost:5173"]

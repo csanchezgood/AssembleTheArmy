@@ -1,0 +1,20 @@
+{
+  "name": "assemble-the-army",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Sistema de convocatoria automática N2/N3 por alertas de New Relic hacia salas de Microsoft Teams",
+  "license": "Apache-2.0",
+  "workspaces": [
+    "packages/backend",
+    "packages/admin-web"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  }
+}

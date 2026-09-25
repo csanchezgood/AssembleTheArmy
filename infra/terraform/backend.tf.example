@@ -1,0 +1,13 @@
+# Remote state. Copy to backend.tf, uncomment and adjust, then run
+# `terraform init -migrate-state`. The bucket and the lock table must exist
+# beforehand (versioned bucket, SSE enabled; table with hash key `LockID`).
+#
+# terraform {
+#   backend "s3" {
+#     bucket         = "my-terraform-state-bucket"
+#     key            = "assemble-the-army/dev/terraform.tfstate"
+#     region         = "us-east-1"
+#     dynamodb_table = "my-terraform-locks"
+#     encrypt        = true
+#   }
+# }

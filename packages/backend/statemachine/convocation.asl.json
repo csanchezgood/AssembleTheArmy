@@ -1,0 +1,406 @@
+{
+  "Comment": "AssembleTheArmy - convocatoria de un equipo de guardia (ARCHITECTURE.md 3.3). Placeholders: resolve_roster_arn, join_room_arn, invite_member_arn, check_joined_arn, evaluate_outcome_arn.",
+  "StartAt": "ResolveRoster",
+  "TimeoutSeconds": 7200,
+  "States": {
+    "ResolveRoster": {
+      "Type": "Task",
+      "Resource": "${resolve_roster_arn}",
+      "Parameters": {
+        "incident_id.$": "$.incident_id",
+        "system_id.$": "$.system_id",
+        "severity.$": "$.severity",
+        "team_id.$": "$.team_id",
+        "escalation_count.$": "$.escalation_count",
+        "policy.$": "$.policy"
+      },
+      "ResultPath": "$.roster",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException",
+            "States.Timeout"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["NoEligibleMembers"],
+          "ResultPath": "$.error",
+          "Next": "NoMembers"
+        }
+      ],
+      "Next": "JoinRoom"
+    },
+    "NoMembers": {
+      "Type": "Pass",
+      "Comment": "Nadie elegible en el roster: se evalua el resultado con slot_results vacio (puede escalar).",
+      "Parameters": {
+        "incident_id.$": "$.incident_id",
+        "system_id.$": "$.system_id",
+        "severity.$": "$.severity",
+        "team_id.$": "$.team_id",
+        "escalation_count.$": "$.escalation_count",
+        "policy.$": "$.policy",
+        "roster": {
+          "targets": [],
+          "room_join_url": null,
+          "escalate_to_team_id": null,
+          "escalate_after_minutes": null,
+          "notify_webhook_urls": null,
+          "cycle_started_at": null
+        },
+        "room": {
+          "room_call_id": null,
+          "bot_participant_id": null,
+          "failure": "no_eligible_members"
+        },
+        "slot_results": [],
+        "error.$": "$.error"
+      },
+      "Next": "EvaluateOutcome"
+    },
+    "JoinRoom": {
+      "Type": "Task",
+      "Resource": "${join_room_arn}",
+      "Parameters": {
+        "incident_id.$": "$.incident_id",
+        "room_join_url.$": "$.roster.room_join_url"
+      },
+      "ResultSelector": {
+        "room_call_id.$": "$.room_call_id",
+        "bot_participant_id.$": "$.bot_participant_id",
+        "failure": null
+      },
+      "ResultPath": "$.room",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "RoomJoinFailed",
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException",
+            "States.Timeout"
+          ],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "RoomJoinFailed"
+        }
+      ],
+      "Next": "ConvokeTeam"
+    },
+    "RoomJoinFailed": {
+      "Type": "Pass",
+      "Comment": "El bot no pudo unirse a la sala: el ciclo termina como unanswered con el error registrado.",
+      "Parameters": {
+        "incident_id.$": "$.incident_id",
+        "system_id.$": "$.system_id",
+        "severity.$": "$.severity",
+        "team_id.$": "$.team_id",
+        "escalation_count.$": "$.escalation_count",
+        "policy.$": "$.policy",
+        "roster.$": "$.roster",
+        "room": {
+          "room_call_id": null,
+          "bot_participant_id": null,
+          "failure": "room_join_failed"
+        },
+        "slot_results": [],
+        "error.$": "$.error"
+      },
+      "Next": "EvaluateOutcome"
+    },
+    "ConvokeTeam": {
+      "Type": "Map",
+      "Comment": "Llama en paralelo a todos los slots del equipo.",
+      "ItemsPath": "$.roster.targets",
+      "MaxConcurrency": 0,
+      "ItemSelector": {
+        "incident_id.$": "$.incident_id",
+        "room_call_id.$": "$.room.room_call_id",
+        "policy.$": "$.policy",
+        "cycle_started_at.$": "$.roster.cycle_started_at",
+        "escalate_after_minutes.$": "$.roster.escalate_after_minutes",
+        "target.$": "$$.Map.Item.Value"
+      },
+      "ItemProcessor": {
+        "ProcessorConfig": { "Mode": "INLINE" },
+        "StartAt": "InitSlot",
+        "States": {
+          "InitSlot": {
+            "Type": "Pass",
+            "Parameters": {
+              "incident_id.$": "$.incident_id",
+              "room_call_id.$": "$.room_call_id",
+              "policy.$": "$.policy",
+              "cycle_started_at.$": "$.cycle_started_at",
+              "escalate_after_minutes.$": "$.escalate_after_minutes",
+              "slot.$": "$.target.slot",
+              "member.$": "$.target.member",
+              "backup.$": "$.target.backup",
+              "current.$": "$.target.member",
+              "attempt": 1,
+              "using_backup.$": "$.target.substituted"
+            },
+            "Next": "Invite"
+          },
+          "Invite": {
+            "Type": "Task",
+            "Resource": "${invite_member_arn}",
+            "Parameters": {
+              "incident_id.$": "$.incident_id",
+              "room_call_id.$": "$.room_call_id",
+              "member.$": "$.current",
+              "slot.$": "$.slot",
+              "attempt.$": "$.attempt",
+              "using_backup.$": "$.using_backup"
+            },
+            "ResultPath": "$.invite",
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "Lambda.ServiceException",
+                  "Lambda.AWSLambdaException",
+                  "Lambda.SdkClientException",
+                  "Lambda.TooManyRequestsException"
+                ],
+                "IntervalSeconds": 2,
+                "MaxAttempts": 2,
+                "BackoffRate": 2
+              }
+            ],
+            "Catch": [
+              {
+                "ErrorEquals": ["States.ALL"],
+                "ResultPath": "$.error",
+                "Next": "SlotError"
+              }
+            ],
+            "Next": "WaitRing"
+          },
+          "WaitRing": {
+            "Type": "Wait",
+            "SecondsPath": "$.policy.ring_timeout_seconds",
+            "Next": "CheckJoined"
+          },
+          "CheckJoined": {
+            "Type": "Task",
+            "Resource": "${check_joined_arn}",
+            "Parameters": {
+              "incident_id.$": "$.incident_id",
+              "room_call_id.$": "$.room_call_id",
+              "member.$": "$.current",
+              "slot.$": "$.slot",
+              "attempt.$": "$.attempt",
+              "cycle_started_at.$": "$.cycle_started_at",
+              "escalate_after_minutes.$": "$.escalate_after_minutes"
+            },
+            "ResultPath": "$.check",
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "Lambda.ServiceException",
+                  "Lambda.AWSLambdaException",
+                  "Lambda.SdkClientException",
+                  "Lambda.TooManyRequestsException"
+                ],
+                "IntervalSeconds": 2,
+                "MaxAttempts": 2,
+                "BackoffRate": 2
+              }
+            ],
+            "Catch": [
+              {
+                "ErrorEquals": ["States.ALL"],
+                "ResultPath": "$.error",
+                "Next": "SlotError"
+              }
+            ],
+            "Next": "Decide"
+          },
+          "Decide": {
+            "Type": "Choice",
+            "Choices": [
+              {
+                "Variable": "$.check.joined",
+                "BooleanEquals": true,
+                "Next": "SlotJoined"
+              },
+              {
+                "Variable": "$.check.time_exceeded",
+                "BooleanEquals": true,
+                "Next": "SlotTimedOut"
+              },
+              {
+                "Variable": "$.attempt",
+                "NumericLessThanPath": "$.policy.max_attempts",
+                "Next": "NextAttempt"
+              },
+              {
+                "And": [
+                  { "Variable": "$.backup", "IsNull": false },
+                  { "Variable": "$.using_backup", "BooleanEquals": false }
+                ],
+                "Next": "SwitchToBackup"
+              }
+            ],
+            "Default": "SlotExhausted"
+          },
+          "NextAttempt": {
+            "Type": "Pass",
+            "Parameters": {
+              "incident_id.$": "$.incident_id",
+              "room_call_id.$": "$.room_call_id",
+              "policy.$": "$.policy",
+              "cycle_started_at.$": "$.cycle_started_at",
+              "escalate_after_minutes.$": "$.escalate_after_minutes",
+              "slot.$": "$.slot",
+              "member.$": "$.member",
+              "backup.$": "$.backup",
+              "current.$": "$.current",
+              "attempt.$": "States.MathAdd($.attempt, 1)",
+              "using_backup.$": "$.using_backup"
+            },
+            "Next": "Invite"
+          },
+          "SwitchToBackup": {
+            "Type": "Pass",
+            "Parameters": {
+              "incident_id.$": "$.incident_id",
+              "room_call_id.$": "$.room_call_id",
+              "policy.$": "$.policy",
+              "cycle_started_at.$": "$.cycle_started_at",
+              "escalate_after_minutes.$": "$.escalate_after_minutes",
+              "slot.$": "$.slot",
+              "member.$": "$.member",
+              "backup.$": "$.backup",
+              "current.$": "$.backup",
+              "attempt": 1,
+              "using_backup": true
+            },
+            "Next": "Invite"
+          },
+          "SlotJoined": {
+            "Type": "Pass",
+            "Parameters": {
+              "slot.$": "$.slot",
+              "member.$": "$.current",
+              "outcome": "joined",
+              "attempt.$": "$.attempt",
+              "using_backup.$": "$.using_backup"
+            },
+            "End": true
+          },
+          "SlotTimedOut": {
+            "Type": "Pass",
+            "Parameters": {
+              "slot.$": "$.slot",
+              "member.$": "$.current",
+              "outcome": "timed_out",
+              "attempt.$": "$.attempt",
+              "using_backup.$": "$.using_backup"
+            },
+            "End": true
+          },
+          "SlotExhausted": {
+            "Type": "Pass",
+            "Parameters": {
+              "slot.$": "$.slot",
+              "member.$": "$.current",
+              "outcome": "exhausted",
+              "attempt.$": "$.attempt",
+              "using_backup.$": "$.using_backup"
+            },
+            "End": true
+          },
+          "SlotError": {
+            "Type": "Pass",
+            "Parameters": {
+              "slot.$": "$.slot",
+              "member.$": "$.current",
+              "outcome": "error",
+              "attempt.$": "$.attempt",
+              "using_backup.$": "$.using_backup",
+              "error.$": "$.error"
+            },
+            "End": true
+          }
+        }
+      },
+      "ResultPath": "$.slot_results",
+      "Next": "EvaluateOutcome"
+    },
+    "EvaluateOutcome": {
+      "Type": "Task",
+      "Resource": "${evaluate_outcome_arn}",
+      "Parameters": {
+        "incident_id.$": "$.incident_id",
+        "system_id.$": "$.system_id",
+        "severity.$": "$.severity",
+        "team_id.$": "$.team_id",
+        "escalation_count.$": "$.escalation_count",
+        "policy.$": "$.policy",
+        "slot_results.$": "$.slot_results",
+        "escalate_to_team_id.$": "$.roster.escalate_to_team_id",
+        "notify_webhook_urls.$": "$.roster.notify_webhook_urls",
+        "failure.$": "$.room.failure"
+      },
+      "ResultPath": "$.outcome",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException",
+            "States.Timeout"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "ShouldEscalate"
+    },
+    "ShouldEscalate": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.outcome.outcome",
+          "StringEquals": "escalate",
+          "Next": "PrepareEscalation"
+        }
+      ],
+      "Default": "Done"
+    },
+    "PrepareEscalation": {
+      "Type": "Pass",
+      "Parameters": {
+        "incident_id.$": "$.incident_id",
+        "system_id.$": "$.system_id",
+        "severity.$": "$.severity",
+        "team_id.$": "$.outcome.next_team_id",
+        "escalation_count.$": "$.outcome.escalation_count",
+        "policy.$": "$.policy"
+      },
+      "Next": "ResolveRoster"
+    },
+    "Done": {
+      "Type": "Succeed"
+    }
+  }
+}

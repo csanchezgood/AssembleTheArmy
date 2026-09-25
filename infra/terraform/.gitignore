@@ -1,0 +1,12 @@
+# Local state, providers, generated bundles and private variable files.
+# (Mirrors the rules of the repository root .gitignore for this directory.)
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.example.tfvars
+build/
+backend.tf
+crash.log
+tfplan
