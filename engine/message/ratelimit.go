@@ -5,6 +5,7 @@ import (
 
 	"github.com/target/goalert/notification"
 	"github.com/target/goalert/notification/email"
+	"github.com/target/goalert/notification/teams"
 	"github.com/target/goalert/notification/twilio"
 )
 
@@ -17,9 +18,9 @@ var PerCMThrottle ThrottleConfig
 func init() {
 	var perCM ThrottleConfigBuilder
 
-	// Rate limit sms, voice and email types
+	// Rate limit Teams call, sms and email types
 	perCM.
-		WithDestTypes(twilio.DestTypeTwilioVoice, twilio.DestTypeTwilioSMS, email.DestTypeEmail).
+		WithDestTypes(teams.DestTypeTeamsCall, twilio.DestTypeTwilioSMS, email.DestTypeEmail).
 		AddRules([]ThrottleRule{{Count: 1, Per: time.Minute}})
 
 	// On-Call Status Notifications
@@ -33,7 +34,7 @@ func init() {
 	// status notifications
 	perCM.
 		WithMsgTypes(notification.MessageTypeAlertStatus).
-		WithDestTypes(twilio.DestTypeTwilioVoice, twilio.DestTypeTwilioSMS, email.DestTypeEmail).
+		WithDestTypes(teams.DestTypeTeamsCall, twilio.DestTypeTwilioSMS, email.DestTypeEmail).
 		AddRules([]ThrottleRule{
 			{Count: 1, Per: 3 * time.Minute},
 			{Count: 3, Per: 20 * time.Minute},
@@ -44,7 +45,7 @@ func init() {
 	alertMessages := perCM.WithMsgTypes(notification.MessageTypeAlert, notification.MessageTypeAlertBundle)
 
 	alertMessages.
-		WithDestTypes(twilio.DestTypeTwilioVoice).
+		WithDestTypes(teams.DestTypeTeamsCall).
 		AddRules([]ThrottleRule{
 			{Count: 3, Per: 15 * time.Minute},
 			{Count: 7, Per: time.Hour, Smooth: true},

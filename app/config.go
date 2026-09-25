@@ -58,8 +58,9 @@ type Config struct {
 
 	EnableSecureHeaders bool
 
-	TwilioBaseURL string
-	SlackBaseURL  string
+	TwilioBaseURL     string
+	SlackBaseURL      string
+	TeamsGraphBaseURL string
 
 	DBURL     string
 	DBURLNext string

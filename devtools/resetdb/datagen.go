@@ -15,6 +15,7 @@ import (
 	"github.com/target/goalert/heartbeat"
 	"github.com/target/goalert/integrationkey"
 	"github.com/target/goalert/label"
+	"github.com/target/goalert/notification/teams"
 	"github.com/target/goalert/notification/twilio"
 	"github.com/target/goalert/override"
 	"github.com/target/goalert/permission"
@@ -156,13 +157,17 @@ func (d *datagen) NewCM(userID string) {
 	}
 	cm.Dest.Type = twilio.DestTypeTwilioSMS
 	if d.Bool() {
-		cm.Dest.Type = twilio.DestTypeTwilioVoice
+		cm.Dest.Type = teams.DestTypeTeamsCall
 	}
 	if d.Intn(4) == 0 {
 		cm.Private = true
 	}
 
-	cm.Dest.SetArg(twilio.FieldPhoneNumber, d.ids.Gen(d.genPhone, cm.Dest.Type))
+	if cm.Dest.Type == teams.DestTypeTeamsCall {
+		cm.Dest.SetArg(teams.FieldUser, d.ids.Gen(d.Email, cm.Dest.Type))
+	} else {
+		cm.Dest.SetArg(twilio.FieldPhoneNumber, d.ids.Gen(d.genPhone, cm.Dest.Type))
+	}
 	d.ContactMethods = append(d.ContactMethods, cm)
 }
 

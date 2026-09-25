@@ -22,10 +22,5 @@ func (app *App) initTwilio(ctx context.Context) error {
 		return errors.Wrap(err, "init TwilioSMS")
 	}
 
-	app.twilioVoice, err = twilio.NewVoice(ctx, app.db, app.twilioConfig)
-	if err != nil {
-		return errors.Wrap(err, "init TwilioVoice")
-	}
-
 	return nil
 }

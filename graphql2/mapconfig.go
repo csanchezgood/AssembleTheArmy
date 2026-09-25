@@ -19,6 +19,7 @@ func MapConfigHints(cfg config.Hints) []ConfigHint {
 		{ID: "Twilio.MessageWebhookURL", Value: cfg.Twilio.MessageWebhookURL},
 		{ID: "Twilio.VoiceWebhookURL", Value: cfg.Twilio.VoiceWebhookURL},
 		{ID: "Slack.InteractivityResponseURL", Value: cfg.Slack.InteractivityResponseURL},
+		{ID: "Teams.CallbackURL", Value: cfg.Teams.CallbackURL},
 	}
 }
 
@@ -81,6 +82,14 @@ func MapConfigValues(cfg config.Config) []ConfigValue {
 		{ID: "Twilio.DisableTwoWaySMS", Type: ConfigTypeBoolean, Description: "Disables SMS reply codes for alert messages.", Value: fmt.Sprintf("%t", cfg.Twilio.DisableTwoWaySMS)},
 		{ID: "Twilio.SMSCarrierLookup", Type: ConfigTypeBoolean, Description: "Perform carrier lookup of SMS contact methods (required for SMSFromNumberOverride). Extra charges may apply.", Value: fmt.Sprintf("%t", cfg.Twilio.SMSCarrierLookup)},
 		{ID: "Twilio.SMSFromNumberOverride", Type: ConfigTypeStringList, Description: "List of 'carrier=number' pairs, SMS messages to numbers of the provided carrier string (exact match) will use the alternate From Number.", Value: strings.Join(cfg.Twilio.SMSFromNumberOverride, "\n")},
+		{ID: "Teams.Enable", Type: ConfigTypeBoolean, Description: "Enables voice calls to Microsoft Teams users (via Microsoft Graph cloud communications) as a contact method.", Value: fmt.Sprintf("%t", cfg.Teams.Enable)},
+		{ID: "Teams.TenantID", Type: ConfigTypeString, Description: "Microsoft Entra tenant (directory) ID.", Value: cfg.Teams.TenantID},
+		{ID: "Teams.ClientID", Type: ConfigTypeString, Description: "Application (client) ID of the Entra app registration. The app needs an Azure Bot with the Teams channel and calling enabled, plus the Calls.Initiate.All and User.Read.All application permissions.", Value: cfg.Teams.ClientID},
+		{ID: "Teams.ClientSecret", Type: ConfigTypeString, Description: "Client secret of the Entra app registration.", Value: cfg.Teams.ClientSecret, Password: true},
+		{ID: "Teams.DisplayName", Type: ConfigTypeString, Description: "Caller name shown to the user in Teams. Defaults to the application name.", Value: cfg.Teams.DisplayName},
+		{ID: "Teams.SpeechRegion", Type: ConfigTypeString, Description: "Azure AI Speech region used for text-to-speech (e.g. eastus).", Value: cfg.Teams.SpeechRegion},
+		{ID: "Teams.SpeechKey", Type: ConfigTypeString, Description: "Azure AI Speech resource key used for text-to-speech.", Value: cfg.Teams.SpeechKey, Password: true},
+		{ID: "Teams.VoiceName", Type: ConfigTypeString, Description: "Azure neural voice used for text-to-speech (e.g. en-US-JennyNeural, es-MX-DaliaNeural). Defaults to en-US-JennyNeural.", Value: cfg.Teams.VoiceName},
 		{ID: "SMTP.Enable", Type: ConfigTypeBoolean, Description: "Enables email as a contact method.", Value: fmt.Sprintf("%t", cfg.SMTP.Enable)},
 		{ID: "SMTP.From", Type: ConfigTypeString, Description: "The email address messages should be sent from.", Value: cfg.SMTP.From},
 		{ID: "SMTP.Address", Type: ConfigTypeString, Description: "The server address to use for sending email. Port is optional and defaults to 465, or 25 if Disable TLS is set. Common ports are: 25 or 587 for STARTTLS (or unencrypted) and 465 for TLS.", Value: cfg.SMTP.Address},
@@ -123,6 +132,8 @@ func MapPublicConfigValues(cfg config.Config) []ConfigValue {
 		{ID: "Twilio.Enable", Type: ConfigTypeBoolean, Description: "Enables sending and processing of Voice and SMS messages through the Twilio notification provider.", Value: fmt.Sprintf("%t", cfg.Twilio.Enable)},
 		{ID: "Twilio.FromNumber", Type: ConfigTypeString, Description: "The Twilio number to use for outgoing notifications.", Value: cfg.Twilio.FromNumber},
 		{ID: "Twilio.MessagingServiceSID", Type: ConfigTypeString, Description: "If set, replaces the use of From Number for SMS notifications.", Value: cfg.Twilio.MessagingServiceSID},
+		{ID: "Teams.Enable", Type: ConfigTypeBoolean, Description: "Enables voice calls to Microsoft Teams users (via Microsoft Graph cloud communications) as a contact method.", Value: fmt.Sprintf("%t", cfg.Teams.Enable)},
+		{ID: "Teams.DisplayName", Type: ConfigTypeString, Description: "Caller name shown to the user in Teams. Defaults to the application name.", Value: cfg.Teams.DisplayName},
 		{ID: "SMTP.Enable", Type: ConfigTypeBoolean, Description: "Enables email as a contact method.", Value: fmt.Sprintf("%t", cfg.SMTP.Enable)},
 		{ID: "SMTP.From", Type: ConfigTypeString, Description: "The email address messages should be sent from.", Value: cfg.SMTP.From},
 		{ID: "Webhook.Enable", Type: ConfigTypeBoolean, Description: "Enables webhook as a contact method.", Value: fmt.Sprintf("%t", cfg.Webhook.Enable)},
@@ -358,6 +369,26 @@ func ApplyConfigValues(cfg config.Config, vals []ConfigValueInput) (config.Confi
 			cfg.Twilio.SMSCarrierLookup = val
 		case "Twilio.SMSFromNumberOverride":
 			cfg.Twilio.SMSFromNumberOverride = parseStringList(v.Value)
+		case "Teams.Enable":
+			val, err := parseBool(v.ID, v.Value)
+			if err != nil {
+				return cfg, err
+			}
+			cfg.Teams.Enable = val
+		case "Teams.TenantID":
+			cfg.Teams.TenantID = v.Value
+		case "Teams.ClientID":
+			cfg.Teams.ClientID = v.Value
+		case "Teams.ClientSecret":
+			cfg.Teams.ClientSecret = v.Value
+		case "Teams.DisplayName":
+			cfg.Teams.DisplayName = v.Value
+		case "Teams.SpeechRegion":
+			cfg.Teams.SpeechRegion = v.Value
+		case "Teams.SpeechKey":
+			cfg.Teams.SpeechKey = v.Value
+		case "Teams.VoiceName":
+			cfg.Teams.VoiceName = v.Value
 		case "SMTP.Enable":
 			val, err := parseBool(v.ID, v.Value)
 			if err != nil {

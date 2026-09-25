@@ -38,6 +38,7 @@ import (
 	"github.com/target/goalert/notification"
 	"github.com/target/goalert/notification/nfydest"
 	"github.com/target/goalert/notification/slack"
+	"github.com/target/goalert/notification/teams"
 	"github.com/target/goalert/notification/twilio"
 	"github.com/target/goalert/notificationchannel"
 	"github.com/target/goalert/oncall"
@@ -92,8 +93,9 @@ type App struct {
 	AuthHandler         *auth.Handler
 
 	twilioSMS    *twilio.SMS
-	twilioVoice  *twilio.Voice
 	twilioConfig *twilio.Config
+
+	teamsCall *teams.Sender
 
 	slackChan *slack.ChannelSender
 

@@ -8,6 +8,7 @@ import {
   Today as ScheduleIcon,
   Webhook as WebhookIcon,
   Email,
+  Groups as TeamsIcon,
 } from '@mui/icons-material'
 
 const builtInIcons: { [key: string]: React.ReactNode } = {
@@ -16,6 +17,7 @@ const builtInIcons: { [key: string]: React.ReactNode } = {
   'builtin://schedule': <ScheduleIcon />,
   'builtin://webhook': <WebhookIcon />,
   'builtin://email': <Email />,
+  'builtin://teams-call': <TeamsIcon />,
 }
 
 export type DestinationAvatarProps = {

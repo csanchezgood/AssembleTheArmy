@@ -346,6 +346,7 @@ Migration: %s (#%d)
 				{name: "Twilio", baseUrl: "https://api.twilio.com/2010-04-01"},
 				{name: "Mailgun", baseUrl: "https://api.mailgun.net/v3"},
 				{name: "Slack", baseUrl: "https://slack.com/api/api.test"},
+				{name: "MicrosoftGraph", baseUrl: "https://graph.microsoft.com/v1.0"},
 			}
 
 			if cfg.OIDC.Enable {
@@ -752,6 +753,8 @@ func getConfig(ctx context.Context) (Config, error) {
 		SlackBaseURL:  viper.GetString("slack-base-url"),
 		TwilioBaseURL: viper.GetString("twilio-base-url"),
 
+		TeamsGraphBaseURL: viper.GetString("teams-graph-base-url"),
+
 		DBURL:     viper.GetString("db-url"),
 		DBURLNext: viper.GetString("db-url-next"),
 
@@ -900,6 +903,7 @@ func init() {
 
 	RootCmd.Flags().String("twilio-base-url", def.TwilioBaseURL, "Override the Twilio API URL.")
 	RootCmd.Flags().String("slack-base-url", def.SlackBaseURL, "Override the Slack base URL.")
+	RootCmd.Flags().String("teams-graph-base-url", def.TeamsGraphBaseURL, "Override the Microsoft Graph API URL used for Teams calls.")
 
 	RootCmd.Flags().String("region-name", def.RegionName, "Name of region for message processing (case sensitive). Only one instance per-region-name will process outgoing messages.")
 

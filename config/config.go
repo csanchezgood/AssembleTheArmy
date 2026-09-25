@@ -98,9 +98,9 @@ type Config struct {
 		// https://api.slack.com/docs/token-types#bot
 		AccessToken string `password:"true" info:"Slack app bot user OAuth access token (should start with xoxb-)."`
 
-		SigningSecret       string `password:"true" info:"Signing secret to verify requests from slack."`
-		InteractiveMessages bool   `info:"Enable interactive messages (e.g. buttons)."`
-		DisableBroadcastThreadReplies bool `info:"Disable broadcasting alert status updates in threads to the main channel." public:"true"`
+		SigningSecret                 string `password:"true" info:"Signing secret to verify requests from slack."`
+		InteractiveMessages           bool   `info:"Enable interactive messages (e.g. buttons)."`
+		DisableBroadcastThreadReplies bool   `info:"Disable broadcasting alert status updates in threads to the main channel." public:"true"`
 	}
 
 	Twilio struct {
@@ -122,6 +122,20 @@ type Config struct {
 		DisableTwoWaySMS      bool     `info:"Disables SMS reply codes for alert messages."`
 		SMSCarrierLookup      bool     `info:"Perform carrier lookup of SMS contact methods (required for SMSFromNumberOverride). Extra charges may apply."`
 		SMSFromNumberOverride []string `info:"List of 'carrier=number' pairs, SMS messages to numbers of the provided carrier string (exact match) will use the alternate From Number."`
+	}
+
+	Teams struct {
+		Enable bool `public:"true" info:"Enables voice calls to Microsoft Teams users (via Microsoft Graph cloud communications) as a contact method."`
+
+		TenantID     string `info:"Microsoft Entra tenant (directory) ID."`
+		ClientID     string `info:"Application (client) ID of the Entra app registration. The app needs an Azure Bot with the Teams channel and calling enabled, plus the Calls.Initiate.All and User.Read.All application permissions."`
+		ClientSecret string `password:"true" info:"Client secret of the Entra app registration."`
+
+		DisplayName string `public:"true" info:"Caller name shown to the user in Teams. Defaults to the application name."`
+
+		SpeechRegion string `info:"Azure AI Speech region used for text-to-speech (e.g. eastus)."`
+		SpeechKey    string `password:"true" info:"Azure AI Speech resource key used for text-to-speech."`
+		VoiceName    string `info:"Azure neural voice used for text-to-speech (e.g. en-US-JennyNeural, es-MX-DaliaNeural). Defaults to en-US-JennyNeural."`
 	}
 
 	SMTP struct {
@@ -478,6 +492,11 @@ func (cfg Config) Validate() error {
 		validateKey("GitHub.ClientID", cfg.GitHub.ClientID),
 		validateKey("GitHub.ClientSecret", cfg.GitHub.ClientSecret),
 		validateKey("Slack.AccessToken", cfg.Slack.AccessToken),
+		validateKey("Teams.ClientSecret", cfg.Teams.ClientSecret),
+		validateKey("Teams.SpeechKey", cfg.Teams.SpeechKey),
+		validate.ASCII("Teams.DisplayName", cfg.Teams.DisplayName, 0, 100),
+		validate.ASCII("Teams.SpeechRegion", cfg.Teams.SpeechRegion, 0, 50),
+		validate.ASCII("Teams.VoiceName", cfg.Teams.VoiceName, 0, 100),
 		validate.Range("Maintenance.AlertCleanupDays", cfg.Maintenance.AlertCleanupDays, 0, 9000),
 		validate.Range("Maintenance.AlertAutoCloseDays", cfg.Maintenance.AlertAutoCloseDays, 0, 9000),
 		validate.Range("Maintenance.APIKeyExpireDays", cfg.Maintenance.APIKeyExpireDays, 0, 9000),
@@ -508,6 +527,12 @@ func (cfg Config) Validate() error {
 	}
 	if cfg.Twilio.FromNumber != "" {
 		err = validate.Many(err, validate.Phone("Twilio.FromNumber", cfg.Twilio.FromNumber))
+	}
+	if cfg.Teams.TenantID != "" {
+		err = validate.Many(err, validate.UUID("Teams.TenantID", cfg.Teams.TenantID))
+	}
+	if cfg.Teams.ClientID != "" {
+		err = validate.Many(err, validate.UUID("Teams.ClientID", cfg.Teams.ClientID))
 	}
 	if cfg.Twilio.MessagingServiceSID != "" {
 		err = validate.Many(err, validate.TwilioSID("Twilio.MessagingServiceSID", "MG", cfg.Twilio.MessagingServiceSID))
@@ -542,6 +567,13 @@ func (cfg Config) Validate() error {
 			"ClientSecret", cfg.Slack.ClientSecret,
 		),
 
+		validateEnable("Teams", cfg.Teams.Enable,
+			"TenantID", cfg.Teams.TenantID,
+			"ClientID", cfg.Teams.ClientID,
+			"ClientSecret", cfg.Teams.ClientSecret,
+			"SpeechRegion", cfg.Teams.SpeechRegion,
+			"SpeechKey", cfg.Teams.SpeechKey,
+		),
 		validateEnable("Twilio", cfg.Twilio.Enable,
 			"AccountSID", cfg.Twilio.AccountSID,
 			"AuthToken", cfg.Twilio.AuthToken,

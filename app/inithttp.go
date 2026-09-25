@@ -156,8 +156,9 @@ func (app *App) initHTTP(ctx context.Context) error {
 
 	mux.HandleFunc("POST /api/v2/twilio/message", app.twilioSMS.ServeMessage)
 	mux.HandleFunc("POST /api/v2/twilio/message/status", app.twilioSMS.ServeStatusCallback)
-	mux.HandleFunc("POST /api/v2/twilio/call", app.twilioVoice.ServeCall)
-	mux.HandleFunc("POST /api/v2/twilio/call/status", app.twilioVoice.ServeStatusCallback)
+
+	mux.HandleFunc("POST /api/v2/teams/callback", app.teamsCall.ServeCallback)
+	mux.HandleFunc("GET /api/v2/teams/media", app.teamsCall.ServeMedia)
 
 	mux.HandleFunc("POST /api/v2/slack/message-action", app.slackChan.ServeMessageAction)
 
@@ -182,12 +183,6 @@ func (app *App) initHTTP(ctx context.Context) error {
 
 		httpRewrite(app.cfg.HTTPPrefix, "/v1/twilio/sms/messages", "/api/v2/twilio/message"),
 		httpRewrite(app.cfg.HTTPPrefix, "/v1/twilio/sms/status", "/api/v2/twilio/message/status"),
-		httpRewrite(app.cfg.HTTPPrefix, "/v1/twilio/voice/call", "/api/v2/twilio/call?type=alert"),
-		httpRewrite(app.cfg.HTTPPrefix, "/v1/twilio/voice/alert-status", "/api/v2/twilio/call?type=alert-status"),
-		httpRewrite(app.cfg.HTTPPrefix, "/v1/twilio/voice/test", "/api/v2/twilio/call?type=test"),
-		httpRewrite(app.cfg.HTTPPrefix, "/v1/twilio/voice/stop", "/api/v2/twilio/call?type=stop"),
-		httpRewrite(app.cfg.HTTPPrefix, "/v1/twilio/voice/verify", "/api/v2/twilio/call?type=verify"),
-		httpRewrite(app.cfg.HTTPPrefix, "/v1/twilio/voice/status", "/api/v2/twilio/call/status"),
 
 		func(next http.Handler) http.Handler {
 			twilioHandler := twilio.WrapValidation(

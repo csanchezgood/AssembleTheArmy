@@ -18,6 +18,9 @@ type Hints struct {
 	Slack struct {
 		InteractivityResponseURL string
 	}
+	Teams struct {
+		CallbackURL string
+	}
 }
 
 // Hints returns available hints for the current configuration.
@@ -30,6 +33,7 @@ func (cfg Config) Hints() Hints {
 	h.Twilio.MessageWebhookURL = cfg.CallbackURL("/api/v2/twilio/message")
 	h.Twilio.VoiceWebhookURL = cfg.CallbackURL("/api/v2/twilio/call")
 	h.Slack.InteractivityResponseURL = cfg.CallbackURL("/api/v2/slack/message-action")
+	h.Teams.CallbackURL = cfg.CallbackURL("/api/v2/teams/callback")
 
 	return h
 }

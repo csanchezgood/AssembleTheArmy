@@ -8,7 +8,7 @@ import (
 	"github.com/target/goalert/engine/message"
 	"github.com/target/goalert/gadb"
 	"github.com/target/goalert/notification"
-	"github.com/target/goalert/notification/twilio"
+	"github.com/target/goalert/notification/teams"
 )
 
 // TestRateLimit checks known good message sequences are allowed by the rate limit config.
@@ -29,7 +29,7 @@ func TestRateLimit(t *testing.T) {
 	}
 
 	validate("alert-voice",
-		notification.MessageTypeAlert, twilio.DestTypeTwilioVoice,
+		notification.MessageTypeAlert, teams.DestTypeTeamsCall,
 
 		// {Count: 3, Per: 15 * time.Minute},
 		// {Count: 7, Per: time.Hour, Smooth: true},
@@ -58,7 +58,7 @@ func TestRateLimit(t *testing.T) {
 	)
 
 	validate("alert-voice-staggered",
-		notification.MessageTypeAlert, twilio.DestTypeTwilioVoice,
+		notification.MessageTypeAlert, teams.DestTypeTeamsCall,
 
 		// {Count: 3, Per: 15 * time.Minute},
 		// {Count: 7, Per: time.Hour, Smooth: true},

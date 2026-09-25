@@ -70,6 +70,7 @@ func (app *App) startup(ctx context.Context) error {
 		ctx, "Startup.Twilio", app.initTwilio)
 
 	app.initStartup(ctx, "Startup.Slack", app.initSlack)
+	app.initStartup(ctx, "Startup.Teams", app.initTeams)
 
 	app.initStartup(ctx, "Startup.Engine", app.initEngine)
 	app.initStartup(ctx, "Startup.Auth", app.initAuth)
@@ -85,7 +86,7 @@ func (app *App) startup(ctx context.Context) error {
 	}
 
 	app.DestRegistry.RegisterProvider(ctx, app.twilioSMS)
-	app.DestRegistry.RegisterProvider(ctx, app.twilioVoice)
+	app.DestRegistry.RegisterProvider(ctx, app.teamsCall)
 	app.DestRegistry.RegisterProvider(ctx, email.NewSender(ctx))
 	app.DestRegistry.RegisterProvider(ctx, app.ScheduleStore)
 	app.DestRegistry.RegisterProvider(ctx, app.UserStore)
