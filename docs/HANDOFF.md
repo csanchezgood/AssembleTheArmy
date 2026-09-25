@@ -36,17 +36,14 @@ Datos de demostración en DynamoDB que hay que borrar antes del uso real:
 regla `critical → N3` en `ata-dev-severity-rules` y la fila `demo-api` /
 `N3#001#33333333-…` en `ata-dev-roster`.
 
-## Riesgo a resolver primero al retomar
+## Estado remoto de Terraform
 
-**El estado de Terraform es local** (`infra/terraform/terraform.tfstate`,
-ignorado por git, solo existe en la máquina donde se desplegó). Si se pierde,
-Terraform no podrá gestionar los recursos ya creados. Al retomar, migrar el
-estado a S3 antes de cualquier otro `apply`:
-
-1. Crear un bucket S3 con versionado y una tabla DynamoDB de bloqueo (o
-   usar `use_lockfile`).
-2. Copiar `backend.tf.example` a `backend.tf` con esos nombres.
-3. `terraform init -migrate-state`.
+Migrado el 2026-09-25 al bucket S3 `ata-terraform-state-826990194949`
+(us-east-2, versionado, cifrado, privado; creado fuera de Terraform), clave
+`assemble-the-army/dev/terraform.tfstate`, bloqueo nativo de S3
+(`use_lockfile`, requiere Terraform >= 1.10). La configuración está en
+`infra/terraform/backend.tf` (en git). Cualquier máquina con acceso a la
+cuenta puede retomar con `terraform init`.
 
 ## Cómo retomar
 

@@ -7,6 +7,5 @@
 *.tfvars
 !*.example.tfvars
 build/
-backend.tf
 crash.log
 tfplan

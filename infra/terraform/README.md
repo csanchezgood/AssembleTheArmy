@@ -30,7 +30,7 @@ npm install && npm run build
 # 2. Variables
 cd infra/terraform
 cp terraform.tfvars.example terraform.tfvars   # editar valores
-# (opcional) estado remoto: cp backend.tf.example backend.tf y editar
+# estado remoto ya configurado en backend.tf (S3, bloqueo nativo); solo terraform init
 
 # 3. Terraform
 terraform init
